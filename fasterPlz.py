@@ -12,6 +12,7 @@ import itertools
 import warnings
 
 
+
 from subprocess import Popen, PIPE, STDOUT
 
 def stringMagic(s):
@@ -79,12 +80,12 @@ def is_number(s):
         return False
         
 
-def is_good(row):
-    
-    if len(row) < 8:
+def is_good(row, length):
+
+    if len(row) != length:
         return False
-    elif len(row[0]) != 17:
-        return False
+    #elif len(row[0]) != 17:
+    #    return False
     else:
         s = str('.'.join(row[8].split(".")[-2:]))
     
@@ -173,7 +174,7 @@ def connLogEnrich(uid):
 
     a = temp.strip().split('\\t') 
 
-    if not a:
+    if not is_good(a, 21):
         return(False)
         
 
@@ -245,7 +246,80 @@ def agentEnrich(agent):
     entropyTemp = entropy(''.join(x))
         
     return(lengthTemp, depthTemp, entropyTemp)
+    
+def insideEnrichHTTP(j,domainName,timeArray,connArray,arbysArray,uriArray,agentArray):
 
+    
+    
+    connLogList = connLogEnrich(j[1]) 
+    if not connLogList: 
+        arbysArray[4].append(1) # this measures http requests with no connections
+        return(timeArray, connArray, arbysArray, uriArray, agentArray)
+    #connLogList = connLogEnrichDomain(domainName)
+    
+
+    connArray[0].append([connLogList[6]]) # string/option
+    connArray[1].append([connLogList[7]]) # string/option
+    connArray[2].append(float(connLogList[8])) # num
+    connArray[3].append(int(connLogList[9])) # num
+    connArray[4].append(int(connLogList[10])) # num
+    connArray[5].append(int(connLogList[16])) # num
+    connArray[6].append(int(connLogList[17])) # num
+    connArray[7].append(int(connLogList[18])) # num
+    connArray[8].append(int(connLogList[19])) # num
+        
+    #except: 
+    #    return(timeArray, connArray, arbysArray, uriArray, agentArray)
+    ####### [0] 
+    
+    timeArray.append(float(j[0]))
+
+    ###### [6] trans_depth: Represents the pipelined depth into the connection of this request/response transaction.
+    arbysArray[0].append(int(j[6])) 
+    
+    ###### [7] method: Verb used in the HTTP request (GET, POST, HEAD, etc.).
+    arbysArray[1].append([j[7]]) 
+    
+    ##### [8] host header
+    # Subdomain
+    subdomainName = (j[8].split(".")[:-2])
+    subdomainName, subdomainDepth, subdomainLength, subdomainEntropy = subdomainEnrich(subdomainName)  
+
+    arbysArray[2].append(subdomainName) #subdomainName
+    """subdomainEntropyAvgList.append(subdomainEntropy)
+    subdomainLengthAvgList.append(subdomainLength)
+    subdomainDepthAvgList.append(subdomainDepth)  """
+    
+    # Domain
+    #hostDomainArray.append(j[8])
+    
+    ###### [9] uri: URI used in the request
+    ### Decompose URI into as many features as possible
+    uriEnriched = uriEnrich(j[8], j[9])
+    
+    if uriEnriched[4] == False:
+        uriArray[0].append([uriEnriched[0]])  #name
+        uriArray[1].append(uriEnriched[1]) #len
+        uriArray[2].append(uriEnriched[2]) # dep
+        uriArray[3].append(uriEnriched[3]) #ent
+        
+    uriArray[4].append(uriEnriched[4]) #is it https # bool
+       
+   
+    ###### [10] referer
+    # Domain
+    #referrerDomainList.append(j[10])
+    
+    ##### [12] UserAgent
+    ### Decompose the user agent into a ton of features
+    agentEnriched = agentEnrich(j[11])
+    
+    agentArray[0].append([j[11]])
+    agentArray[1].append(agentEnriched[0])
+    agentArray[2].append(agentEnriched[1])
+    agentArray[3].append(agentEnriched[2])
+    return(timeArray, connArray, arbysArray, uriArray, agentArray)
+    
 def enrichHTTP(dictEntry, domainName):
 
     subdomainArray = []
@@ -282,6 +356,11 @@ def enrichHTTP(dictEntry, domainName):
     agentDepList = []
     agentEntList = []
     
+    connArray = [[]]*10
+    timeArray = []
+    arbysArray = [[]]*5
+    uriArray = [[]]*5
+    agentArray = [[]]*4
     
     requestLenList = []
     responseLenList = []
@@ -304,74 +383,9 @@ def enrichHTTP(dictEntry, domainName):
     
     print("Enriching " + str(domainName))
     for j in dictEntry:
-
-        connLogList = connLogEnrich(j[1]) 
-        #connLogList = connLogEnrichDomain(domainName)
-
-        try:
+        timeArray, connArray, arbysArray, uriArray, agentArray = insideEnrichHTTP(j, domainName, timeArray, connArray, arbysArray, uriArray, agentArray)
+        #insideEnrichHTTP(j, domainName, timeArray, connArray, arbysArray, uriArray, agentArray)
         
-            protoArray.append([connLogList[6]]) # string/option
-            serviceArray.append([connLogList[7]]) # string/option
-            durationArray.append(float(connLogList[8])) # num
-            origBytesArray.append(int(connLogList[9])) # num
-            respBytesArray.append(int(connLogList[10])) # num
-            origPacketsArray.append(int(connLogList[16])) # num
-            origIpBytesArray.append(int(connLogList[17])) # num
-            respPacketsArray.append(int(connLogList[18])) # num
-            respIpBytesArray.append(int(connLogList[19])) # num
-            
-        except IndexError or ValueError:
-
-            connLogList = [0]*20
-        ####### [0] 
-        
-        timeArray.append(float(j[0]))
-
-        ###### [6] trans_depth: Represents the pipelined depth into the connection of this request/response transaction.
-        transList.append(int(j[6])) 
-        
-        ###### [7] method: Verb used in the HTTP request (GET, POST, HEAD, etc.).
-        methodList.append([j[7]]) 
-        
-        ##### [8] host header
-        # Subdomain
-        subdomainName = (j[8].split(".")[:-2])
-        subdomainName, subdomainDepth, subdomainLength, subdomainEntropy = subdomainEnrich(subdomainName)  
-
-        subdomainArray.append(subdomainName)
-        """subdomainEntropyAvgList.append(subdomainEntropy)
-        subdomainLengthAvgList.append(subdomainLength)
-        subdomainDepthAvgList.append(subdomainDepth)  """
-        
-        # Domain
-        #hostDomainArray.append(j[8])
-        
-        ###### [9] uri: URI used in the request
-        ### Decompose URI into as many features as possible
-        uriEnriched = uriEnrich(j[8], j[9])
-        
-        if uriEnriched[4] == False:
-            uriList.append([uriEnriched[0]])    
-            uriLenList.append(uriEnriched[1])
-            uriDepList.append(uriEnriched[2])
-            uriEntList.append(uriEnriched[3])
-        
-        uriHttpsList.append(uriEnriched[4]) #bool
-           
-       
-        ###### [10] referer
-        # Domain
-        #referrerDomainList.append(j[10])
-        
-        ##### [12] UserAgent
-        ### Decompose the user agent into a ton of features
-        agentEnriched = agentEnrich(j[11])
-        
-        agentList.append([j[11]])
-        agentLenList.append(agentEnriched[0])
-        agentDepList.append(agentEnriched[1])
-        agentEntList.append(agentEnriched[2])
-
     #### Aggregation Features ####
     # Time   
 
@@ -379,6 +393,7 @@ def enrichHTTP(dictEntry, domainName):
 
     deltaTimeList = [j - i for i, j in zip(timeArray[:-1], timeArray[1:])]
     count = len(methodList)
+    
     magicDurationArray = mathMagic(durationArray)
     magicOrigBytesArray = mathMagic(origBytesArray)
     magicRespBytesArray = mathMagic(respBytesArray)
@@ -452,11 +467,11 @@ def listMaker(csvOne):
 
 
     listOfNames = []
-    print("Making List")
+
     for row in csv_f:
         try:
       
-            if is_good(row):
+            if is_good(row, 12):
                 dictKey = str('.'.join(row[8].split(".")[-2:]))
                 
                 if is_number(dictKey[-1]):
@@ -492,8 +507,8 @@ def dictionaryMaker(csvOne, targetDomain):
     for row in csv_f:
 
         try:
-
-            if is_good(row):
+            length = 30
+            if is_good(row, 12):
                 dictKey = str('.'.join(row[8].split(".")[-2:]))
 
                 
@@ -526,6 +541,9 @@ def threadedFunction(i):
     with open("o.csv", "at") as f:
         writer = csv.writer(f)
         writer.writerow(temp)
+        
+
+
     
 blacklist = ["usma.bluenet", "usna.bluenet", "hq.bluenet", "range.bluenet", "rmc.bluenet"]
 
@@ -535,7 +553,7 @@ for name in blacklist:
     listOfNames.remove(name)
     
 from multiprocessing.dummy import Pool as ThreadPool 
-pool = ThreadPool(3) 
+pool = ThreadPool(1) 
 finalArray = pool.map(threadedFunction, listOfNames)
     
 
