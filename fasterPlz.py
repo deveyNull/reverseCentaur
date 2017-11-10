@@ -94,7 +94,19 @@ def is_good(row, length):
         else:
             return True
         
+def is_gooder(row, length):
 
+    if len(row) <= length:
+        return False
+    #elif len(row[0]) != 17:
+    #    return False
+    else:
+        s = str('.'.join(row[8].split(".")[-2:]))
+    
+        if "#" in s or "/" in s or "=" in s or "/" in s:
+            return False
+        else:
+            return True
 
 def dictionaryToArrays(magicDictionary):
 
@@ -477,18 +489,20 @@ def listMaker(csvOne):
     for row in csv_f:
         try:
       
-            if is_good(row, 12):
+            if is_gooder(row, 12):
                 dictKey = str('.'.join(row[8].split(".")[-2:]))
                 
-                if is_number(dictKey[-1]):
-                    b = "0"
-                else:
-                    if dictKey in listOfNames:
-                        b = "0"
-               
-                    else:
+            else:
             
-                        listOfNames.append(dictKey)
+
+                
+                if dictKey in listOfNames:
+                    b=0
+                        
+               
+                else:
+                    listOfNames.append(dictKey)
+                    
                    
               
         except:
@@ -514,7 +528,7 @@ def dictionaryMaker(csvOne, targetDomain):
 
         try:
             length = 30
-            if is_good(row, 12):
+            if is_gooder(row, 12):
                 dictKey = str('.'.join(row[8].split(".")[-2:]))
 
                 
@@ -541,10 +555,10 @@ def dictionaryMaker(csvOne, targetDomain):
     return(magicDictionary)
     
 def threadedFunction(i):
-    magicDictionary = dictionaryMaker("myOut.csv", i)    
+    magicDictionary = dictionaryMaker("2017-cdx-logs/bro_http_log", i)    
 
     temp = dictionaryToArrays(magicDictionary)
-    with open("to.csv", "at") as f:
+    with open("otto.csv", "at") as f:
         writer = csv.writer(f)
         writer.writerow(temp)
         
@@ -553,7 +567,7 @@ def threadedFunction(i):
     
 blacklist = ["usma.bluenet", "usna.bluenet", "hq.bluenet", "range.bluenet", "rmc.bluenet"]
 
-listOfNames = listMaker("myOut.csv")
+listOfNames = listMaker("2017-cdx-logs/bro_http_log")
 #listOfNames = ["osha.gov"]
 for name in blacklist:
     listOfNames.remove(name)
