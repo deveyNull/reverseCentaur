@@ -130,7 +130,6 @@ def domainEnrich(domainNameFull):
 
 def subdomainEnrich(subdomainName):
 
-    
     if subdomainName == []:
             subdomainName = ["-"]
             subdomainDepth = 0
@@ -252,22 +251,24 @@ def insideEnrichHTTP(j,domainName,timeArray,connArray,arbysArray,uriArray,agentA
     
     
     connLogList = connLogEnrich(j[1]) 
+
     if not connLogList: 
         arbysArray[4].append(1) # this measures http requests with no connections
         return(timeArray, connArray, arbysArray, uriArray, agentArray)
     #connLogList = connLogEnrichDomain(domainName)
     
 
-    connArray[0].append([connLogList[6]]) # string/option
-    connArray[1].append([connLogList[7]]) # string/option
-    connArray[2].append(float(connLogList[8])) # num
-    connArray[3].append(int(connLogList[9])) # num
+    connArray[0].append([connLogList[6]]) # string/option # proto
+    connArray[1].append([connLogList[7]]) # string/option # service
+
+    connArray[2].append(float(connLogList[8])) # num #duration
+    connArray[3].append(int(connLogList[9])) # num 
     connArray[4].append(int(connLogList[10])) # num
     connArray[5].append(int(connLogList[16])) # num
     connArray[6].append(int(connLogList[17])) # num
     connArray[7].append(int(connLogList[18])) # num
     connArray[8].append(int(connLogList[19])) # num
-        
+
     #except: 
     #    return(timeArray, connArray, arbysArray, uriArray, agentArray)
     ####### [0] 
@@ -283,9 +284,13 @@ def insideEnrichHTTP(j,domainName,timeArray,connArray,arbysArray,uriArray,agentA
     ##### [8] host header
     # Subdomain
     subdomainName = (j[8].split(".")[:-2])
+    
     subdomainName, subdomainDepth, subdomainLength, subdomainEntropy = subdomainEnrich(subdomainName)  
 
-    arbysArray[2].append(subdomainName) #subdomainName
+    if subdomainName != "-":
+        arbysArray[2].append(subdomainName) 
+    
+    #subdomainName
     """subdomainEntropyAvgList.append(subdomainEntropy)
     subdomainLengthAvgList.append(subdomainLength)
     subdomainDepthAvgList.append(subdomainDepth)  """
@@ -356,11 +361,11 @@ def enrichHTTP(dictEntry, domainName):
     agentDepList = []
     agentEntList = []
     
-    connArray = [[]]*10
+    connArray = [[],[],[],[],[],[],[],[],[],[],[]]
     timeArray = []
-    arbysArray = [[]]*5
-    uriArray = [[]]*5
-    agentArray = [[]]*4
+    arbysArray = [[],[],[],[],[]]
+    uriArray = [[],[],[],[],[],[]]
+    agentArray = [[],[],[],[],[]]
     
     requestLenList = []
     responseLenList = []
@@ -392,15 +397,17 @@ def enrichHTTP(dictEntry, domainName):
 
 
     deltaTimeList = [j - i for i, j in zip(timeArray[:-1], timeArray[1:])]
-    count = len(methodList)
+    #print(connArray[2])
     
-    magicDurationArray = mathMagic(durationArray)
-    magicOrigBytesArray = mathMagic(origBytesArray)
-    magicRespBytesArray = mathMagic(respBytesArray)
-    magicOrigPacketsArray = mathMagic(origPacketsArray)
-    magicOrigIpBytesArray = mathMagic(origIpBytesArray)
-    magicRespPacketsArray = mathMagic(respPacketsArray)
-    magicRespIpBytesArray = mathMagic(respIpBytesArray)
+    count = len(connArray[2])
+
+    magicDurationArray = mathMagic(connArray[2])
+    magicOrigBytesArray = mathMagic(connArray[3])
+    magicRespBytesArray = mathMagic(connArray[4])
+    magicOrigPacketsArray = mathMagic(connArray[5])
+    magicOrigIpBytesArray = mathMagic(connArray[6])
+    magicRespPacketsArray = mathMagic(connArray[7])
+    magicRespIpBytesArray = mathMagic(connArray[8])
 
     
     #### Convert To Features ####
@@ -411,34 +418,26 @@ def enrichHTTP(dictEntry, domainName):
     
 
     # String Math
-    temp0 = stringMagic(subdomainArray) # this is broken.
-    temp1 = stringMagic(agentList)
-    temp2 = stringMagic(uriList)
-    temp3 = stringMagic(methodList)
+    temp0 = stringMagic(arbysArray[2]) # this is broken.
+    temp1 = stringMagic(agentArray[0])
+    temp2 = stringMagic(uriArray[0])
+    #temp3 = stringMagic(methodList)
     
     # Math Math
     temp_0 = mathMagic(deltaTimeList)
-    temp_1 = mathMagic(transList)
-    temp_2 = mathMagic(uriLenList)
-    temp_3 = mathMagic(uriDepList) 
-    temp_4 = mathMagic(uriEntList) 
-    temp_5 = mathMagic(agentLenList)
-    temp_6 = mathMagic(agentDepList) 
-    temp_7 = mathMagic(agentEntList) 
+
+    temp_2 = mathMagic(uriArray[1])
+    temp_3 = mathMagic(uriArray[2]) 
+    temp_4 = mathMagic(uriArray[3]) 
+    temp_5 = mathMagic(agentArray[1])
+    temp_6 = mathMagic(agentArray[2]) 
+    temp_7 = mathMagic(agentArray[3]) 
     
     tempArray.extend((
         temp0,
         temp1,
         temp2,
-        temp3,
         temp_0,
-        temp_1,
-        temp_2,
-        temp_3,
-        temp_4,
-        temp_5, 
-        temp_6,
-        temp_7,     
         magicDurationArray,
         magicOrigBytesArray,
         magicRespBytesArray,
@@ -446,6 +445,13 @@ def enrichHTTP(dictEntry, domainName):
         magicOrigIpBytesArray,
         magicRespPacketsArray,
         magicRespIpBytesArray,
+        temp_2,
+        temp_3,
+        temp_4,
+        temp_5, 
+        temp_6,
+        temp_7,     
+        
     ))
 
     tempArray = list(itertools.chain.from_iterable(tempArray))
@@ -538,7 +544,7 @@ def threadedFunction(i):
     magicDictionary = dictionaryMaker("myOut.csv", i)    
 
     temp = dictionaryToArrays(magicDictionary)
-    with open("o.csv", "at") as f:
+    with open("to.csv", "at") as f:
         writer = csv.writer(f)
         writer.writerow(temp)
         
@@ -551,6 +557,7 @@ listOfNames = listMaker("myOut.csv")
 #listOfNames = ["osha.gov"]
 for name in blacklist:
     listOfNames.remove(name)
+    
     
 from multiprocessing.dummy import Pool as ThreadPool 
 pool = ThreadPool(1) 
