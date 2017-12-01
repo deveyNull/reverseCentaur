@@ -1,13 +1,13 @@
 ## I will use this to describe the csv.
 
-##### domainName: 
-##### count:
+##### domainName: Name of the domain. So much can be done with reputation stuff. Just write the functions and add to existing script.
+##### count: Honestly... the most effective feature. Data Size / Entropy = Count. 
 
 ## Word Magic: return([countUnique, percentageUnique, modeCount, percentageMode]) 
 ### For every item below there are 4 columns.
 ##### temp0 = subdomain array: Super important for DNS, less likely to be used for HTTP because there are so many other places to hide data. 
 ##### temp1 = user agent array: Unlikely to be used by anyone, but it could happen. 
-temp2, uri array #super important for http, encoded in URI
+##### temp2 = uri array: Super important for HTTP, URI encoded. 
 
 ## Math Magic: (return([countUnique, percentageUnique, average, minimum, maximum, entropyStat, variationStat, skewStat, kurtosisStat])
 ### For every item in this list, there are 9 columns for each statistics function returned
