@@ -3,14 +3,28 @@
 ##### domainName: Name of the domain. So much can be done with reputation stuff. Just write the functions and add to existing script.
 ##### count: Honestly... the most effective feature. Data Size / Entropy = Count. 
 
-## Word Magic: return([countUnique, percentageUnique, modeCount, percentageMode]) 
+## Word Magic: 
 ### For every item below there are 4 columns.
+#### countUnique
+#### percentageUnique
+#### modeCount
+#### percentageMode
+
 ##### temp0 = subdomain array: Super important for DNS, less likely to be used for HTTP because there are so many other places to hide data. 
 ##### temp1 = user agent array: Unlikely to be used by anyone, but it could happen. 
 ##### temp2 = uri array: Super important for HTTP, URI encoded. 
 
-## Math Magic: (return([countUnique, percentageUnique, average, minimum, maximum, entropyStat, variationStat, skewStat, kurtosisStat])
+## Math Magic: 
 ### For every item in this list, there are 9 columns for each statistics function returned
+#### countUnique
+#### percentageUnique #Should I add in modeCount and percentageMode? 
+#### average
+#### minimum
+#### maximum
+#### entropyStat
+#### variationStat
+#### skewStat
+#### kurtosisStat
 
 ##### temp_0 = delta time list: Stats from an array of the time differences between connections... a poor man's time series analysis. There are much better ways to do this most likely, for now, most likely effective. 
 ##### magicDurationArray = connection durations: Stats from an array of the connection lengths. File under, possibly important. 
